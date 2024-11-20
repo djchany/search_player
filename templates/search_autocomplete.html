@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>선수 검색</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* 전체 페이지 스타일 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: hsl(0deg 0% 8.24%);
+            color: #333;
+        }
+
+        /* 폼 컨테이너 */
+        .form-container {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            position: relative; /* autocomplete suggestions 위치 조정을 위해 */
+        }
+
+        .form-container h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: hsl(0deg 0% 16.47%);
+        }
+
+        /* 입력 필드 스타일 */
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            font-size: 16px;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: #007bff;
+        }
+
+        /* 제안 목록 스타일 */
+        .autocomplete-suggestions {
+            border: 1px solid #ccc;
+            border-top: none;
+            max-height: 150px;
+            overflow-y: auto;
+            background-color: #fff;
+            position: absolute;
+            top: 100%; /* 입력 필드 바로 아래에 표시 */
+            left: 0;
+            width: 100%; /* 입력 필드와 동일한 너비 */
+            box-sizing: border-box;
+            border-radius: 0 0 4px 4px;
+            display: none;
+        }
+
+        .autocomplete-suggestions div {
+            padding: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .autocomplete-suggestions div:hover {
+            background-color: #f0f0f0;
+        }
+
+        /* 버튼 스타일 */
+        button {
+            background-color: hsl(144.56deg 94.42% 49.22%);
+            color: hsl(0deg 0% 16.47%);
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: hsl(145, 98%, 17%);
+            color: hsl(0, 0%, 100%);
+        }
+
+        /* 작은 반응형 디자인을 위한 설정 */
+        @media (max-width: 500px) {
+            .form-container {
+                padding: 20px;
+            }
+            .form-container h1 {
+                font-size: 20px;
+            }
+            input[type="text"] {
+                padding: 12px;
+            }
+            button {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="form-container">
+        <h1>FC4 선수 검색</h1>
+        <form id="search-form" method="post" action="/results">
+            <input type="text" id="search-term" name="search-term" autocomplete="off" placeholder="선수명을 입력하세요" required>
+            <div id="autocomplete-results" class="autocomplete-suggestions"></div>
+            <button type="submit">검색</button>
+        </form>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            const suggestions = $('#autocomplete-results');
+            let typingTimer;
+            const doneTypingInterval = 300;  // 사용자 입력 후 300ms 뒤에 요청 전송
+    
+            $('#search-term').on('input', function () {
+                const term = $(this).val();
+                clearTimeout(typingTimer);  // 이전 타이머 초기화
+    
+                if (term.length > 0) {
+                    typingTimer = setTimeout(function () {
+                        $.getJSON('/autocomplete', { term: term }, function (data) {
+                            suggestions.empty();
+                            if (data.length > 0) {  // 결과가 있으면
+                                suggestions.show();  // 제안 창 표시
+                                data.forEach(name => {
+                                    suggestions.append(`<div>${name}</div>`);
+                                });
+                            } else {
+                                suggestions.hide();  // 결과가 없으면 제안 창 숨김
+                            }
+                        });
+                    }, doneTypingInterval);
+                } else {
+                    suggestions.empty().hide(); // 입력이 비었을 때 숨김
+                }
+            });
+    
+            // 제안 클릭 시 입력 필드에 텍스트 채우기
+            suggestions.on('click', 'div', function () {
+                $('#search-term').val($(this).text());
+                suggestions.empty().hide(); // 클릭 후 제안창 숨기기
+            });
+    
+            // 입력 필드 외부 클릭 시 제안창 숨기기
+            $(document).click(function (e) {
+                if (!$(e.target).closest('#search-term').length) {
+                    suggestions.empty().hide();  // 외부 클릭 시 제안창 숨김
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
